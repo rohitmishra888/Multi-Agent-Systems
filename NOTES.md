@@ -7,3 +7,6 @@ Initial scaffolding for the multi-agent security testing platform.
 - Phase 1: API Discovery Agent
 - Phase 2: Security Testing Agent
 - CrewAI orchestration layer
+
+## Dependencies
+- crewai, httpx, pydantic, beautifulsoup4
