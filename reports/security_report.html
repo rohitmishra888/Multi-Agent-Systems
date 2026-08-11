@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Security Assessment Report — http://localhost:5000</title>
+<style>
+  :root {
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #273548;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .header h1 { font-size: 2rem; font-weight: 700; color: #fff; position: relative; }
+  .header .subtitle { color: rgba(255,255,255,0.8); margin-top: 0.5rem; position: relative; }
+  .risk-banner {
+    display: inline-block;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 2rem;
+    padding: 0.4rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 1rem;
+    position: relative;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  section { margin-bottom: 2.5rem; }
+  h2 {
+    font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 2px solid var(--border);
+    color: var(--accent);
+  }
+  h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+
+  /* ── Meta grid ── */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .meta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+  }
+  .meta-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .meta-card .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
+
+  /* ── Severity summary ── */
+  .sev-grid {
+    display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+  }
+  .sev-card {
+    flex: 1; min-width: 100px;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    text-align: center;
+    border-left: 4px solid;
+  }
+  .sev-card.CRITICAL { border-color: #dc2626; background: rgba(220,38,38,0.12); }
+  .sev-card.HIGH     { border-color: #ea580c; background: rgba(234,88,12,0.12); }
+  .sev-card.MEDIUM   { border-color: #d97706; background: rgba(217,119,6,0.12); }
+  .sev-card.LOW      { border-color: #16a34a; background: rgba(22,163,74,0.12); }
+  .sev-card.INFO     { border-color: #6b7280; background: rgba(107,114,128,0.12); }
+  .sev-card .sev-count { font-size: 2rem; font-weight: 700; }
+  .sev-card .sev-label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+
+  /* ── Executive summary ── */
+  .exec-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    line-height: 1.8;
+  }
+
+  /* ── Finding card ── */
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+  .finding-header {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .finding-header:hover { background: var(--surface2); }
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+  .badge-vuln { background: #3b82f6; }
+  .finding-title { font-weight: 600; flex: 1; }
+  .cvss-score {
+    font-size: 1.2rem; font-weight: 700;
+    min-width: 3rem; text-align: right;
+  }
+  .finding-body { padding: 1.25rem 1.5rem; display: none; }
+  .finding-body.open { display: block; }
+
+  .detail-row { display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .detail-label { font-size: 0.8rem; color: var(--muted); font-weight: 600; padding-top: 0.1rem; }
+  .detail-value { font-size: 0.9rem; }
+
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: #a5f3fc;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  ul.remediation-list { padding-left: 1.25rem; }
+  ul.remediation-list li { margin-bottom: 0.3rem; font-size: 0.9rem; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { background: var(--surface2); font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.06em; }
+  tr:hover td { background: var(--surface2); }
+
+  /* ── Roadmap ── */
+  .roadmap-list { list-style: none; padding: 0; }
+  .roadmap-list li {
+    padding: 0.7rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <h1>🛡 API Security Assessment Report</h1>
+  <div class="subtitle">http://localhost:5000 &nbsp;·&nbsp; 2026-08-10 21:30 UTC</div>
+  <div class="risk-banner">Overall Risk Posture: CRITICAL</div>
+</div>
+
+<div class="container">
+
+<!-- ═══ SCAN METADATA ═══ -->
+<section>
+  <h2>Scan Metadata</h2>
+  <div class="meta-grid">
+    <div class="meta-card">
+      <div class="label">Report ID</div>
+      <div class="value" style="font-size:0.85rem;">VAMPI-20260810-212937-218F31</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Target</div>
+      <div class="value">http://localhost:5000</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Scan Duration</div>
+      <div class="value">0m 35s</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Total Findings</div>
+      <div class="value">11</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Confirmed Vulns</div>
+      <div class="value">10</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Highest CVSS</div>
+      <div class="value">9.8</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Endpoints Tested</div>
+      <div class="value">41</div>
+    </div>
+    <div class="meta-card">
+      <div class="label">Phase 1 Catalog</div>
+      <div class="value" style="font-size:0.8rem;">http://localhost:5000</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEVERITY SUMMARY ═══ -->
+<section>
+  <h2>Vulnerability Summary</h2>
+  <div class="sev-grid">
+    <div class="sev-card CRITICAL">
+      <div class="sev-count" style="color:#dc2626;">3</div>
+      <div class="sev-label">Critical</div>
+    </div>
+    <div class="sev-card HIGH">
+      <div class="sev-count" style="color:#ea580c;">3</div>
+      <div class="sev-label">High</div>
+    </div>
+    <div class="sev-card MEDIUM">
+      <div class="sev-count" style="color:#d97706;">5</div>
+      <div class="sev-label">Medium</div>
+    </div>
+    <div class="sev-card LOW">
+      <div class="sev-count" style="color:#16a34a;">0</div>
+      <div class="sev-label">Low</div>
+    </div>
+    <div class="sev-card INFO">
+      <div class="sev-count" style="color:#6b7280;">0</div>
+      <div class="sev-label">Info</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ EXECUTIVE SUMMARY ═══ -->
+<section>
+  <h2>Executive Summary</h2>
+  <div class="exec-summary">
+    <p>Security assessment of http://localhost:5000 identified 11 vulnerability finding(s), of which 10 were positively confirmed with proof-of-concept evidence. The overall risk posture is rated CRITICAL based on a highest CVSS base score of 9.8. Findings breakdown: 3 Critical, 3 High, 5 Medium, 0 Low. Immediate remediation is recommended for all Critical and High severity findings prior to any production deployment.</p>
+  </div>
+</section>
+
+<!-- ═══ FINDINGS ═══ -->
+<section>
+  <h2>Vulnerability Findings (11)</h2>
+  
+<div class="finding-card" id="finding-1" style="border-left: 4px solid #dc2626;">
+  <div class="finding-header">
+    <span class="badge" style="background:#dc2626;">CRITICAL</span>
+    <span class="badge" style="background:#6b7280;">SUSPECTED</span>
+    <span class="finding-title">INJ-001 — Potential SQL Injection — Email Update Endpoint (VAmPI Known Vulnerability)</span>
+    <span class="cvss-score" style="color:#dc2626;">9.8</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API8:2019 Injection</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>PUT /users/v1/{username}/email</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>9.8</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">VAmPI&#x27;s email update endpoint is documented as containing SQL injection. Automated error signatures were not detected (VAmPI may swallow errors), but manual testing with UNION-based payloads is recommended.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Potential full database access via SQL injection.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>PUT</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td><code>400</code></td>
+            </tr>
+            <tr>
+              <td><code>PUT</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td><code>400</code></td>
+            </tr>
+            <tr>
+              <td><code>PUT</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td><code>400</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -X PUT http://localhost:5000/users/v1/inj_feaef731/email \
+  -H &#x27;Authorization: Bearer &lt;JWT&gt;&#x27; \
+  -d &#x27;{&quot;email&quot;:&quot;&#x27; UNION SELECT username,password,1 FROM users--@x.com&quot;}&#x27;</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Use parameterised queries for all database interactions.</li><li>Validate and sanitise email format before query execution.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-2" style="border-left: 4px solid #dc2626;">
+  <div class="finding-header">
+    <span class="badge" style="background:#dc2626;">CRITICAL</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">MASS-001 — Mass Assignment — Admin Privilege Escalation via Registration</span>
+    <span class="cvss-score" style="color:#dc2626;">9.8</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API6:2019 Mass Assignment</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>POST /users/v1/register</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>9.8</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">The registration endpoint accepted the extra field(s) {&quot;admin&quot;: true} and applied them to the user&#x27;s account. The user &#x27;mass_8877f51c&#x27; was registered with admin privileges by including {&quot;admin&quot;: true} in the registration payload.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Any unauthenticated user can self-register as an administrator, gaining full administrative access to the application.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>POST</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/register</td>
+              <td><code>200</code></td>
+            </tr>
+            <tr>
+              <td><code>GET</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/me</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -X POST http://localhost:5000/users/v1/register \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;username&quot;: &quot;hacker&quot;, &quot;password&quot;: &quot;pass&quot;, &quot;email&quot;: &quot;h@x.com&quot;, &quot;admin&quot;: true}&#x27;
+# Then login as &#x27;hacker&#x27; — admin=true confirmed in profile</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Use a whitelist of allowed registration fields: only username, email, password.</li><li>Never bind request body directly to the user model/ORM object.</li><li>Implement explicit field assignment instead of bulk update patterns.</li><li>Validate and reject any extra fields not in the allowed whitelist.</li><li>Use a dedicated registration DTO that excludes admin/role fields.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-3" style="border-left: 4px solid #dc2626;">
+  <div class="finding-header">
+    <span class="badge" style="background:#dc2626;">CRITICAL</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">BOLA-003 — IDOR — Unauthorized Password Change on Another User&#x27;s Account</span>
+    <span class="cvss-score" style="color:#dc2626;">9.1</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API1:2019 Broken Object Level Authorization</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>PUT /users/v1/{username}/password</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>9.1</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; successfully changed User &#x27;bola_b_389cfd&#x27;s password without knowing the current password.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Complete account takeover — attacker locks victim out of their account.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>PUT</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd/password</td>
+              <td><code>204</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;password&quot;:&quot;hacker_new_pass&quot;}&#x27; http://localhost:5000/users/v1/bola_b_389cfd/password</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Only allow users to change their own password (verify JWT subject == URL username).</li><li>Require current password confirmation before allowing password change.</li><li>Implement strong audit logging for all password change operations.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-4" style="border-left: 4px solid #ea580c;">
+  <div class="finding-header">
+    <span class="badge" style="background:#ea580c;">HIGH</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">BOLA-001 — Broken Object Level Authorization — Cross-User Profile Read</span>
+    <span class="cvss-score" style="color:#ea580c;">8.1</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API1:2019 Broken Object Level Authorization</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>GET /users/v1/{username}</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>8.1</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; (authenticated with their own JWT) successfully accessed User &#x27;bola_b_389cfd&#x27;s profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Any authenticated user can read any other user&#x27;s profile data, including potentially sensitive fields like email addresses and admin flags.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>GET</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre># Login as User A to get JWT
+curl -X POST http://localhost:5000/users/v1/login -d &#x27;{&quot;username&quot;:&quot;bola_a_389cfd&quot;,&quot;password&quot;:&quot;...&quot;}&#x27;
+
+# Use User A&#x27;s JWT to access User B&#x27;s data
+curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/users/v1/bola_b_389cfd</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Verify that the authenticated user ID matches the requested resource owner ID.</li><li>Use the JWT sub/username claim to authorise resource access, not the URL parameter.</li><li>Implement object-level access control checks in every endpoint handler.</li><li>Return HTTP 403 Forbidden when a user attempts to access another user&#x27;s resource.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-5" style="border-left: 4px solid #ea580c;">
+  <div class="finding-header">
+    <span class="badge" style="background:#ea580c;">HIGH</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">BOLA-002 — IDOR — Unauthorized Email Update on Another User&#x27;s Account</span>
+    <span class="cvss-score" style="color:#ea580c;">8.1</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API1:2019 Broken Object Level Authorization</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>PUT /users/v1/{username}/email</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>8.1</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; successfully updated User &#x27;bola_b_389cfd&#x27;s email to &#x27;hacked_62b257@evil.invalid&#x27;. This is an Insecure Direct Object Reference (IDOR) vulnerability.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Account takeover: attacker changes victim&#x27;s email and requests password reset.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>PUT</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd/email</td>
+              <td><code>204</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;email&quot;:&quot;attacker@evil.com&quot;}&#x27; http://localhost:5000/users/v1/bola_b_389cfd/email</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Extract username from the validated JWT token, not the URL.</li><li>Verify the JWT subject matches the URL username before processing.</li><li>Implement resource ownership middleware for all user-scoped endpoints.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-6" style="border-left: 4px solid #ea580c;">
+  <div class="finding-header">
+    <span class="badge" style="background:#ea580c;">HIGH</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">EXPO-001 — Debug Endpoint Exposes Sensitive Data — /users/v1/_debug</span>
+    <span class="cvss-score" style="color:#ea580c;">7.5</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API3:2019 Excessive Data Exposure</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>GET /users/v1/_debug</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>7.5</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">The /users/v1/_debug endpoint is accessible and returns data. Debug endpoints should never be exposed in any environment. Exposed sensitive fields: [&#x27;admin&#x27;, &#x27;password&#x27;]</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Debug endpoints can expose internal system details, all user records, and credentials.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>GET</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/_debug</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -H &#x27;Authorization: Bearer &lt;JWT&gt;&#x27; http://localhost:5000/users/v1/_debug</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Remove all debug/internal endpoints before deployment.</li><li>Use feature flags or environment-specific routing to disable debug routes.</li><li>If debug endpoints are needed, restrict to internal network only.</li><li>Implement proper access control: admin-only with IP whitelisting.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-7" style="border-left: 4px solid #d97706;">
+  <div class="finding-header">
+    <span class="badge" style="background:#d97706;">MEDIUM</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">AUTH-001 — User Enumeration via Login Error Messages</span>
+    <span class="cvss-score" style="color:#d97706;">5.3</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API2:2019 Broken User Authentication</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>POST /users/v1/login</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>5.3</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">Login error for non-existent user reveals account existence. Response: { &quot;status&quot;: &quot;fail&quot;, &quot;message&quot;: &quot;Username does not exist&quot;}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Attackers can enumerate valid usernames by observing error message differences.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>POST</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/login</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -X POST http://localhost:5000/users/v1/login \
+  -d &#x27;{&quot;username&quot;:&quot;nonexistent_01df47&quot;,&quot;password&quot;:&quot;x&quot;}&#x27;
+# Response reveals: user does not exist</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Return a generic error message for all failed login attempts.</li><li>Use the same response for wrong username and wrong password.</li><li>Implement account lockout after N failed attempts.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-8" style="border-left: 4px solid #d97706;">
+  <div class="finding-header">
+    <span class="badge" style="background:#d97706;">MEDIUM</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">BOLA-004 — User List Accessible Without Authentication</span>
+    <span class="cvss-score" style="color:#d97706;">5.3</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API5:2019 Broken Function Level Authorization</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>GET /users/v1</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>5.3</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">The user listing endpoint returns data without any authentication. This exposes usernames and potentially other sensitive fields.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Enables user enumeration and reconnaissance for targeted attacks.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>GET</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl http://localhost:5000/users/v1</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Require authentication for all user listing endpoints.</li><li>Restrict user listing to admin roles only.</li><li>Implement pagination and rate limiting on public endpoints.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-9" style="border-left: 4px solid #d97706;">
+  <div class="finding-header">
+    <span class="badge" style="background:#d97706;">MEDIUM</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">RATE-001 — No Rate Limiting on Registration Endpoint — Account Creation Spam</span>
+    <span class="cvss-score" style="color:#d97706;">5.3</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API4:2019 Lack of Resources &amp; Rate Limiting</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>POST /users/v1/register</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>5.3</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">Successfully registered 10 accounts in rapid succession without any rate limiting. All requests returned success status codes.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Attackers can create unlimited accounts (bot registration, spam, resource exhaustion of database and storage).</div>
+    </div>
+    
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>for i in range(1000):
+    requests.post(&#x27;http://localhost:5000/users/v1/register&#x27;,
+        json={&quot;username&quot;:f&quot;spam{i}&quot;,&quot;password&quot;:&quot;x&quot;,&quot;email&quot;:f&quot;s{i}@x.com&quot;})</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Implement IP-based rate limiting on registration (max 5/hour per IP).</li><li>Add email verification to prevent disposable email spam.</li><li>Implement CAPTCHA on registration.</li><li>Return HTTP 429 with Retry-After when limit exceeded.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-10" style="border-left: 4px solid #d97706;">
+  <div class="finding-header">
+    <span class="badge" style="background:#d97706;">MEDIUM</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">RATE-002 — No Rate Limiting on User Listing Endpoint</span>
+    <span class="cvss-score" style="color:#d97706;">5.3</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API4:2019 Lack of Resources &amp; Rate Limiting</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>GET /users/v1</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>5.3</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">Sent 30 rapid GET requests to /users/v1 without 429. Unlimited scraping of user data is possible.</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Enables bulk user enumeration and DoS via resource exhaustion.</div>
+    </div>
+    
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre># Unlimited user list scraping:
+for i in range(10000):
+    requests.get(&#x27;http://localhost:5000/users/v1&#x27;)</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Implement global API rate limiting (e.g., 100 requests/minute per IP).</li><li>Use a reverse proxy (nginx, Cloudflare) for rate limit enforcement.</li><li>Add pagination to prevent bulk data extraction in a single request.</li></ul>
+        </div>
+  </div>
+</div>
+<div class="finding-card" id="finding-11" style="border-left: 4px solid #d97706;">
+  <div class="finding-header">
+    <span class="badge" style="background:#d97706;">MEDIUM</span>
+    <span class="badge" style="background:#16a34a;">CONFIRMED</span>
+    <span class="finding-title">EXPO-002 — Missing Security Headers in API Responses</span>
+    <span class="cvss-score" style="color:#d97706;">4.3</span>
+    <span class="toggle-indicator" style="color:var(--muted);margin-left:0.5rem;">▼</span>
+  </div>
+  <div class="finding-body">
+    <div class="detail-row">
+      <div class="detail-label">OWASP Category</div>
+      <div class="detail-value">API7:2019 Security Misconfiguration</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Endpoint</div>
+      <div class="detail-value"><code>GET /users/v1</code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">CVSS v3.1</div>
+      <div class="detail-value">
+        <strong>4.3</strong>
+        <code style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N</code>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">The following security headers are missing: [&#x27;x-content-type-options&#x27;, &#x27;x-frame-options&#x27;, &#x27;strict-transport-security&#x27;, &#x27;content-security-policy&#x27;, &#x27;x-xss-protection&#x27;]</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Impact</div>
+      <div class="detail-value">Increases attack surface for XSS, clickjacking, and MIME sniffing attacks.</div>
+    </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>HTTP Evidence</h3>
+              <table>
+                <thead><tr><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+            <tr>
+              <td><code>GET</code></td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1</td>
+              <td><code>200</code></td>
+            </tr></tbody>
+              </table>
+            </div>
+    
+            <div style="margin-top:1rem;">
+              <h3>Proof of Concept</h3>
+              <pre>curl -I http://localhost:5000/users/v1</pre>
+            </div>
+    
+        <div style="margin-top:1rem;">
+          <h3>Remediation</h3>
+          <ul class="remediation-list"><li>Add missing headers: [&#x27;x-content-type-options&#x27;, &#x27;x-frame-options&#x27;, &#x27;strict-transport-security&#x27;, &#x27;content-security-policy&#x27;, &#x27;x-xss-protection&#x27;]</li><li>Use a security headers middleware (e.g., flask-talisman).</li></ul>
+        </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══ OWASP COVERAGE ═══ -->
+<section>
+  <h2>OWASP API Top 10 Coverage</h2>
+  <table>
+    <thead><tr><th>OWASP Category</th><th>Findings</th></tr></thead>
+    <tbody>
+            <tr>
+                <td>API1:2019 Broken Object Level Authorization</td>
+                <td><span class="badge badge-vuln">3 findings</span></td>
+            </tr>
+            <tr>
+                <td>API2:2019 Broken User Authentication</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr>
+            <tr>
+                <td>API3:2019 Excessive Data Exposure</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr>
+            <tr>
+                <td>API4:2019 Lack of Resources & Rate Limiting</td>
+                <td><span class="badge badge-vuln">2 findings</span></td>
+            </tr>
+            <tr>
+                <td>API5:2019 Broken Function Level Authorization</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr>
+            <tr>
+                <td>API6:2019 Mass Assignment</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr>
+            <tr>
+                <td>API7:2019 Security Misconfiguration</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr>
+            <tr>
+                <td>API8:2019 Injection</td>
+                <td><span class="badge badge-vuln">1 finding</span></td>
+            </tr></tbody>
+  </table>
+</section>
+
+<!-- ═══ REMEDIATION ROADMAP ═══ -->
+<section>
+  <h2>Remediation Roadmap</h2>
+  <ul class="roadmap-list"><li>[P1] [CRITICAL] IDOR — Unauthorized Password Change on Another User&#x27;s Account: Only allow users to change their own password (verify JWT subject == URL username).</li>
+<li>[P2] [CRITICAL] IDOR — Unauthorized Password Change on Another User&#x27;s Account: Require current password confirmation before allowing password change.</li>
+<li>[P3] [CRITICAL] IDOR — Unauthorized Password Change on Another User&#x27;s Account: Implement strong audit logging for all password change operations.</li>
+<li>[P4] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Use a whitelist of allowed registration fields: only username, email, password.</li>
+<li>[P5] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Never bind request body directly to the user model/ORM object.</li>
+<li>[P6] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Implement explicit field assignment instead of bulk update patterns.</li>
+<li>[P7] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Validate and reject any extra fields not in the allowed whitelist.</li>
+<li>[P8] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Use a dedicated registration DTO that excludes admin/role fields.</li>
+<li>[P9] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Verify that the authenticated user ID matches the requested resource owner ID.</li>
+<li>[P10] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Use the JWT sub/username claim to authorise resource access, not the URL parameter.</li>
+<li>[P11] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Implement object-level access control checks in every endpoint handler.</li>
+<li>[P12] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Return HTTP 403 Forbidden when a user attempts to access another user&#x27;s resource.</li>
+<li>[P13] [HIGH] IDOR — Unauthorized Email Update on Another User&#x27;s Account: Extract username from the validated JWT token, not the URL.</li>
+<li>[P14] [HIGH] IDOR — Unauthorized Email Update on Another User&#x27;s Account: Verify the JWT subject matches the URL username before processing.</li>
+<li>[P15] [HIGH] IDOR — Unauthorized Email Update on Another User&#x27;s Account: Implement resource ownership middleware for all user-scoped endpoints.</li>
+<li>[P16] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Remove all debug/internal endpoints before deployment.</li>
+<li>[P17] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Use feature flags or environment-specific routing to disable debug routes.</li>
+<li>[P18] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: If debug endpoints are needed, restrict to internal network only.</li>
+<li>[P19] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Implement proper access control: admin-only with IP whitelisting.</li>
+<li>[P20] [MEDIUM] User Enumeration via Login Error Messages: Return a generic error message for all failed login attempts.</li>
+</ul>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  Generated by Phase 2 — Security Testing Specialist &nbsp;·&nbsp;
+  Multi-Agent AI Security Testing Platform &nbsp;·&nbsp;
+  2026-08-10 21:30 UTC
+</div>
+
+<script>
+// Toggle finding body on header click
+document.querySelectorAll('.finding-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+    const indicator = header.querySelector('.toggle-indicator');
+    if (indicator) indicator.textContent = body.classList.contains('open') ? '▲' : '▼';
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+.Python
+build/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files (NEVER commit real secrets)
+.env
+*.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.prof
+
+# Output files (regenerated on each scan)
+reports/catalog.json
+reports/catalog.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

