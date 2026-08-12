@@ -23,7 +23,7 @@ This platform implements a production-grade, two-agent AI architecture designed 
 ## 🏛️ Platform Architecture
 
 ```
-phase1-api-discovery/
+multi-agent-systems/
 │
 ├── agents/
 │   ├── discovery_agent.py    ← Phase 1 CrewAI Agent + Task + 6 Recon @tool functions
@@ -116,7 +116,7 @@ curl http://localhost:5000/
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd phase1-api-discovery
+cd multi-agent-systems
 
 # Create virtual environment
 python -m venv venv
